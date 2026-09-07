@@ -15,7 +15,7 @@ def _require(name: str) -> str:
 
 
 GROQ_API_KEY = _require("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
 PINECONE_API_KEY = _require("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "schedule-agent")
