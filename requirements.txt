@@ -1,15 +1,11 @@
-# langchain 0.3.x + langchain-groq 0.3.x share langchain-core 0.3.x — no conflict.
-langchain>=0.3.0,<0.4.0
-langchain-groq>=0.3.0,<0.4.0
+# Groq SDK directly — no langchain/langgraph needed
+groq>=0.9.0,<1.0.0
 
-# langgraph provides create_react_agent
-langgraph>=0.2.0,<0.3.0
+# langchain-core still needed for @tool decorator on tools.py
+langchain-core>=0.3.0,<1.0.0
 
 pinecone>=3.0.0,<4.0.0
-
-# fastembed: ONNX-based embeddings, no torch/CUDA, ~50MB — fits Render free tier
 fastembed>=0.3.0,<1.0.0
-
 fastapi>=0.115.0,<1.0.0
 uvicorn[standard]>=0.34.0,<1.0.0
 sse-starlette>=1.3.0,<2.0.0
