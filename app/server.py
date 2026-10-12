@@ -109,6 +109,32 @@ def list_events(category: str = "all"):
     return JSONResponse(content={"events": events})
 
 
+class EventCreate(BaseModel):
+    title: str
+    date: str
+    time: str = "09:00"
+    event_type: str = "meeting"
+    description: str = ""
+
+
+@app.post("/events")
+def create_event(payload: EventCreate):
+    """Create an event directly in Pinecone — no LLM involved."""
+    from app.tools import update_schedule
+    try:
+        result = update_schedule.invoke({
+            "action": "add",
+            "title": payload.title,
+            "date": payload.date,
+            "time": payload.time,
+            "event_type": payload.event_type,
+            "description": payload.description,
+        })
+        return {"status": "created", "message": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.delete("/events/{event_id}")
 def delete_event(event_id: str):
     """Delete a specific event by ID directly from Pinecone."""
@@ -412,18 +438,29 @@ async function saveEvent() {
   if (!date || !title) { st.className='ps err'; st.textContent='Date and title are required.'; return; }
   btn.disabled=true; st.className='ps'; st.textContent='Saving...';
 
-  const msg = action==='delete'
-    ? `Delete the event titled "${title}" on ${date}`
-    : action==='update'
-    ? `Update event "${title}" on ${date}: change time to ${time}, category ${type}. ${desc}`
-    : `Add a ${type} event titled "${title}" on ${date} at ${time}. ${desc}`;
-
   try {
-    const res = await fetch('/agent/invoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:msg})});
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail);
-    st.textContent = action==='delete'?'✓ Deleted.':action==='update'?'✓ Updated.':'✓ Saved!';
-    if (action==='add') { document.getElementById('f-title').value=''; document.getElementById('f-desc').value=''; }
+    if (action === 'add') {
+      // Direct Pinecone save — no LLM
+      const res = await fetch('/events', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title, date, time, event_type: type, description: desc}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      st.textContent = '✓ Saved!';
+      document.getElementById('f-title').value = '';
+      document.getElementById('f-desc').value = '';
+    } else {
+      // Update/delete still uses agent
+      const msg = action==='delete'
+        ? `Delete the event titled "${title}" on ${date}`
+        : `Update event "${title}" on ${date}: change time to ${time}, category ${type}. ${desc}`;
+      const res = await fetch('/agent/invoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:msg})});
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      st.textContent = action==='delete' ? '✓ Deleted.' : '✓ Updated.';
+    }
   } catch(e) { st.className='ps err'; st.textContent='Error: '+e.message; }
   finally { btn.disabled=false; }
 }
